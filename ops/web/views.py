@@ -576,7 +576,7 @@ def registerEmail(request):
     systemUser = UserSystem.manager.filter(email=mail)
     systemUserSerializer = UserSystemSerializer(systemUser, many=True)
     registerId = systemUserSerializer.data[0]['id']
-    msg = "<a href='http://njit.wwwien.top:8000/activeaccount?id={registerId}' target='_blank'>点击激活</a>".format(
+    msg = "<a href='http://njit.wwwien.top:9000/activeaccount?id={registerId}' target='_blank'>点击激活</a>".format(
         registerId=registerId)
     send_mail(
         '大数据平台管理系统注册',
