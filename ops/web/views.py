@@ -3,8 +3,8 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
-from web.models import UserSystem, Equipment, Cpu, UserStudent, Storage, Disk, Software,LoginLog
-from web.serializers import UserSystemSerializer, EquipmentSerializer, CpuSerializer, UserStudentSerializer, DiskSerializer, StorageSerializer, SoftwareSerializer,LoginLogSerializer
+from web.models import UserSystem, Equipment, Cpu, UserStudent, Storage, Disk, LoginLog, StudentClass,Network
+from web.serializers import UserSystemSerializer, EquipmentSerializer, CpuSerializer, UserStudentSerializer, DiskSerializer, StorageSerializer, LoginLogSerializer, StudentClassSerializer,NetworkSerializer
 from io import BytesIO
 from datetime import datetime
 from django.db import transaction
@@ -26,7 +26,7 @@ def login(request):
         systemUser, many=True)  # 序列化后的QuerySet对象    数据在 QuerySet.data 里
     if len(systemUser) > 0:  # 计算数组长度需要用QuerySet对象
 
-        systemUser.update(status=1)#在线
+        systemUser.update(status=1)  # 在线
 
         userId = systemUserSerializer.data[0]['id']
         response = JsonResponse({'status': 'ok', 'data': systemUserSerializer.data,
@@ -204,29 +204,46 @@ def uploadExcel(request):
 
 @csrf_exempt
 def getStudentUser(request):
-    params = request.GET.dict()  # 获取Get参数
+    params = request.GET.dict()  # 获取Get参数 stu_name class_grade
     if(params):
         if('stu_name' in params and 'class_grade' in params):
+            studentClass = StudentClass.manager.filter(
+                classname=params['class_grade'])
+            if len(studentClass) > 0:
+                studentClassSerializer = StudentClassSerializer(
+                    studentClass, many=True)
+                classId = studentClassSerializer.data[0]['id']
+            else:
+                classId = -1
             studentUser = UserStudent.manager.filter(
-                stu_name=params['stu_name'], class_grade=params['class_grade'])
+                name=params['stu_name'], classID=classId)
         elif('stu_name' in params):
             studentUser = UserStudent.manager.filter(
-                stu_name=params['stu_name'])
+                name=params['stu_name'])
         else:
-            studentUser = UserStudent.manager.filter(
-                class_grade=params['class_grade'])
+            studentClass = StudentClass.manager.filter(
+                classname=params['class_grade'])
+            if len(studentClass) > 0:
+                studentClassSerializer = StudentClassSerializer(
+                    studentClass, many=True)
+                classId = studentClassSerializer.data[0]['id']
+            else:
+                classId = -1
+            studentUser = UserStudent.manager.filter(classID=classId)
     else:
         studentUser = UserStudent.manager.all()
     studentUserSerializer = UserStudentSerializer(studentUser, many=True)
     res = []
     for item in studentUserSerializer.data:
+        classinfo = StudentClass.manager.filter(
+            id=item['classID'])
+        classinfoSerializer = StudentClassSerializer(classinfo, many=True)
         res.append({
             'key': item['id'],
-            'name': item['stu_name'],
-            'status': item['status'],
-            'class': item['class_grade'],
-            'academy': item['academy'],
-            'number': item['stu_num'],
+            'name': item['name'],
+            'class': classinfoSerializer.data[0]['classname'],
+            'academy': classinfoSerializer.data[0]['academy'],
+            'number': item['number'],
         })
     return JsonResponse(res, safe=False)
 
@@ -249,11 +266,32 @@ def deleteStudentUser(request):
 def updateStudentUser(request):
     # request.body 是二进制数据， json.loads转换未json格式
     params = json.loads(request.body)
-    print(params)
+    stu_name = params['stu_name']
+    academy = params['academy']
+    class_grade = params['class_grade']
+    stu_num = params['stu_num']
+    spell = params['spell']
+    classSpell=params['classSpell']
+
     res = UserStudent.manager.filter(id=params['id'])
     # 序列化必须在res.delete之前，否则res就不存在了。
     resData = UserStudentSerializer(res, many=True)
-    studentUser = res.update(**params)  # **就是js里的...
+
+    studentClass = StudentClass.manager.filter( #检索有无此班级学院
+        id=resData.data[0]['classID'])
+    if len(studentClass) > 0:  # 有就取用id
+        studentClassSerializer = StudentClassSerializer(
+            studentClass, many=True)
+        classId = studentClassSerializer.data[0]['id']
+    else: # 没有就新建后取用id
+        StudentClass.manager.create(classname=class_grade, academy=academy,classspell=classSpell)
+        createClass = StudentClass.manager.filter(classname=class_grade)
+        createClassSerializer = StudentClassSerializer(createClass, many=True)
+        classId = createClassSerializer.data[0]['id']
+
+
+    # **就是js里的...
+    res.update(name=stu_name, number=stu_num, classID=classId,spell=spell)
     return JsonResponse(resData.data, safe=False)
 
 
@@ -262,8 +300,25 @@ def updateStudentUser(request):
 @csrf_exempt
 def createStudentUser(request):
     params = json.loads(request.body)
-    UserStudent.manager.create(**params)
-    studentUser = UserStudent.manager.filter(stu_name=params['stu_name'])
+    stu_name = params['stu_name']
+    academy = params['academy']
+    class_grade = params['class_grade']
+    stu_num = params['stu_num']
+    spell = params['spell']
+    classSpell=params['classSpell']
+
+    classinfo = StudentClass.manager.filter(classname=class_grade) #有无此班级
+    classinfoSerializer = StudentClassSerializer(classinfo, many=True)
+    if len(classinfo) > 0: #有就取用id
+        classId = classinfoSerializer.data[0]['id']
+    else: #没有新建后取用id
+        StudentClass.manager.create(classname=class_grade, academy=academy,classspell=classSpell)
+        createClass = StudentClass.manager.filter(classname=class_grade)
+        createClassSerializer = StudentClassSerializer(createClass, many=True)
+        classId = createClassSerializer.data[0]['id']
+    #新建用户    
+    UserStudent.manager.create(name=stu_name, number=stu_num, classID=classId,spell=spell)
+    studentUser = UserStudent.manager.filter(name=params['stu_name'])
     studentUserSerializer = UserStudentSerializer(studentUser, many=True)
     return JsonResponse(studentUserSerializer.data, safe=False)
 
@@ -273,7 +328,6 @@ def createStudentUser(request):
 @csrf_exempt
 def downloadExcelStu(request):
     params = request.GET
-    print(params['needData'])
   # 设置HTTPResponse的类型
     response = HttpResponse(content_type='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment;filename=studentUser.xls'
@@ -287,6 +341,9 @@ def downloadExcelStu(request):
     sheet.write(0, 1, '学号')
     sheet.write(0, 2, '学院')
     sheet.write(0, 3, '班级')
+    sheet.write(0, 4, '姓名拼音')
+    sheet.write(0, 5, '班级拼音')
+    
 
     if(params['needData'] != 'false'):
         # 写入数据
@@ -296,10 +353,13 @@ def downloadExcelStu(request):
             # 格式化datetime
             # pri_time = i.pri_date.strftime('%Y-%m-%d')
             # oper_time = i.operating_time.strftime('%Y-%m-%d')
-            sheet.write(data_row, 0, i.stu_name)
-            sheet.write(data_row, 1, i.stu_num)
-            sheet.write(data_row, 2, i.academy)
-            sheet.write(data_row, 3, i.class_grade)
+            classinfo = StudentClass.manager.filter(id=i.classID)
+            sheet.write(data_row, 0, i.name)
+            sheet.write(data_row, 1, i.number)
+            sheet.write(data_row, 2, classinfo[0].academy)
+            sheet.write(data_row, 3, classinfo[0].classname)
+            sheet.write(data_row, 4, i.spell)
+            sheet.write(data_row, 5, classinfo[0].classspell)
             data_row = data_row + 1
 
     # 写出到IO
@@ -328,8 +388,15 @@ def uploadExcelStu(request):
                     with transaction.atomic():  # 控制数据库事务交易
                         for i in range(1, rows):
                             rowVlaues = table.row_values(i)
+                            classinfo = StudentClass.manager.filter(classname=rowVlaues[3])
+                            if len(classinfo) > 0:
+                                classId = classinfo[0].id
+                            else:
+                                StudentClass.manager.create(classname=rowVlaues[3],academy=rowVlaues[2],classspell=rowVlaues[5])
+                                newClassinfo = StudentClass.manager.filter(classname=rowVlaues[3])
+                                classId = newClassinfo[0].id
                             UserStudent.manager.create(
-                                stu_name=rowVlaues[0], stu_num=rowVlaues[1], academy=rowVlaues[2], class_grade=rowVlaues[3])
+                                name=rowVlaues[0], number=rowVlaues[1], spell=rowVlaues[4], classID=classId)
                 except:
                     print('解析excel文件或者数据插入错误')
                     return JsonResponse({'message': '导入失败', 'detail': '解析excel文件或者数据插入错误'}, safe=False)
@@ -365,32 +432,29 @@ def getEquipmentData(request):  # param equip_name:设备名称 status：使用�
     res = []
     for item in equipmentsSerializer.data:
 
-        cpu = Cpu.manager.filter(equip_id=item['id'], check_date=today)
+        cpu = Cpu.manager.filter(hostID=item['id'], date=today)
         cpulength = len(cpu)
         if(cpulength > 0):
             cpuSerializer = CpuSerializer(cpu, many=True)
-            cpuUseRate = cpuSerializer.data[cpulength - 1]['usage_rate']
+            cpuUseRate = cpuSerializer.data[cpulength - 1]['usage']
         else:
             cpuUseRate = 0
 
-        storage = Storage.manager.filter(equip_id=item['id'], check_date=today)
+        storage = Storage.manager.filter(hostID=item['id'], date=today)
         storagelength = len(storage)
         if(storagelength > 0):
             storageSerializer = StorageSerializer(storage, many=True)
-            storageUseRate = storageSerializer.data[storagelength-1]['usage_rate']
+            storageUseRate = storageSerializer.data[storagelength-1]['usage']
         else:
             storageUseRate = 0
 
-        disk = Disk.manager.filter(equip_id=item['id'], check_date=today)
+        disk = Disk.manager.filter(hostID=item['id'], date=today)
         disklength = len(disk)
         if(disklength > 0):
             diskSerializer = DiskSerializer(disk, many=True)
-            diskUseRate = diskSerializer.data[disklength - 1]['usage_rate']
+            diskUseRate = diskSerializer.data[disklength - 1]['usage']
         else:
             diskUseRate = 0
-
-        software = Software.manager.filter(equip_id=item['id'])
-        softwarelen = len(software)
 
         res.append({
             'key': item['id'],
@@ -398,12 +462,12 @@ def getEquipmentData(request):  # param equip_name:设备名称 status：使用�
             'ip': item['ip'],
             'type': item['node_type'],
             'model': item['cpu_model'],
-            'cpu': cpuUseRate,
+            'cpu': '{rate}%'.format(rate=cpuUseRate),
             'number': item['core_num'],
-            'storage': storageUseRate,
-            'disk': diskUseRate,
-            'software': softwarelen,
-            'agent': item['isagent'],
+            'storage': '{rate}%'.format(rate=storageUseRate),
+            'disk': '{rate}%'.format(rate=diskUseRate),
+            'software': 1,
+            'agent': "是" if item['isagent'] == 1 else "否",
         })
     return JsonResponse(res, safe=False)
 
@@ -445,9 +509,9 @@ def updateEquipment(request):
 # 获取cpu检测数据
 def getCpu(request):
     params = request.GET
-    equip_id = params['id']
+    hostID = params['id']
     date = time.strftime('%Y-%m-%d', time.localtime(time.time()))  # 当前日期
-    cpu = Cpu.manager.filter(equip_id=equip_id, check_date=date)
+    cpu = Cpu.manager.filter(hostID=hostID, date=date)
     cpuSerializer = CpuSerializer(cpu, many=True)
     return JsonResponse(cpuSerializer.data, safe=False)
 
@@ -456,9 +520,9 @@ def getCpu(request):
 
 def getStorage(request):
     params = request.GET
-    equip_id = params['id']
+    hostID = params['id']
     date = time.strftime('%Y-%m-%d', time.localtime(time.time()))  # 当前日期
-    storage = Storage.manager.filter(equip_id=equip_id, check_date=date)
+    storage = Storage.manager.filter(hostID=hostID, date=date)
     storageSerializer = StorageSerializer(storage, many=True)
     return JsonResponse(storageSerializer.data, safe=False)
 
@@ -467,29 +531,36 @@ def getStorage(request):
 
 def getDisk(request):
     params = request.GET
-    equip_id = params['id']
+    hostID = params['id']
     date = time.strftime('%Y-%m-%d', time.localtime(time.time()))  # 当前日期
-    disk = Disk.manager.filter(equip_id=equip_id, check_date=date)
+    disk = Disk.manager.filter(hostID=hostID, date=date)
     diskSerializer = DiskSerializer(disk, many=True)
     return JsonResponse(diskSerializer.data, safe=False)
 
+# 获取网络检测数据
 
-# 获软件数据
-
-def getSoftware(request):
+def getNetwork(request):
     params = request.GET
-    equip_id = params['id']
-    software = Software.manager.filter(equip_id=equip_id)
-    softwareSerializer = SoftwareSerializer(software, many=True)
-    res = []
-    for item in softwareSerializer.data:
-        res.append({
-            'key': item['id'],
-            'softName': item['soft_name'],
-            'logName': item['soft_log_name'],
-            'describe': item['describe'],
-        })
-    return JsonResponse(res, safe=False)
+    hostID = params['id']
+    date = time.strftime('%Y-%m-%d', time.localtime(time.time()))  # 当前日期
+    network = Network.manager.filter(hostID=hostID, date=date)
+    networkSerializer = NetworkSerializer(network, many=True)
+    return JsonResponse(networkSerializer.data, safe=False)# # 获软件数据
+
+# def getSoftware(request):
+#     params = request.GET
+#     equip_id = params['id']
+#     software = Software.manager.filter(equip_id=equip_id)
+#     softwareSerializer = SoftwareSerializer(software, many=True)
+#     res = []
+#     for item in softwareSerializer.data:
+#         res.append({
+#             'key': item['id'],
+#             'softName': item['soft_name'],
+#             'logName': item['soft_log_name'],
+#             'describe': item['describe'],
+#         })
+#     return JsonResponse(res, safe=False)
 
 # 发送邮件
 @csrf_exempt
@@ -524,17 +595,20 @@ def activeAccount(request):
     UserSystem.manager.filter(id=params['id']).update(status=0)  # 根据id激活
     return JsonResponse({'status': 'ok'}, safe=False)
 
+
+
+
 # 测试
 @csrf_exempt
 def test(request):
-    print('path:',request.path)
-    print('request.user:',request.user)
+    print('path:', request.path)
+    print('request.user:', request.user)
     print()
     print()
     print()
     print()
-    print('request.META',request.META)
-    print("ip:",request.META.get('REMOTE_ADDR'))
+    print('request.META', request.META)
+    print("ip:", request.META.get('REMOTE_ADDR'))
     return HttpResponse('ok')
     # for item in equipmentsSerializer.data:
     #     cpu = Cpu.manager.filter(equip_id=item['id'])

@@ -33,26 +33,43 @@ class UserSystem(models.Model):
 
 class UserStudent(models.Model):
     # 姓名
-    stu_name = models.CharField(max_length=30)
-    # 密码
-    stu_password = models.CharField(max_length=30)
+    name = models.CharField(max_length=20)
     # 学号
-    stu_num = models.IntegerField()
-    # 学院
-    academy = models.CharField(max_length=30)
-    # 班级
-    class_grade = models.CharField(max_length=30)
-    # 登陆状态 默认0：离线  1:登陆
-    status = models.IntegerField(default=0)
+    number = models.CharField(max_length=20)
+    # 拼音
+    spell = models.CharField(max_length=20)
+    # 班级id
+    classID = models.IntegerField()
+    # # 登陆状态 默认0：离线  1:登陆
+    # status = models.IntegerField(default=0)
     create_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)
 
     manager = models.Manager()
 
     class Meta:
-        db_table = 'user_stu'  # 自定义表名称
+        db_table = 'student'  # 自定义表名称
         verbose_name = '学生用户列表'  # 指定在admin管理界面中显示的名称
         ordering = ('create_time',)
+
+# 班级
+
+class StudentClass(models.Model):
+    # 姓名
+    classname = models.CharField(max_length=40)
+    # 学号
+    academy = models.CharField(max_length=40)
+    # 拼音
+    classspell = models.CharField(max_length=40)
+    # create_time = models.DateTimeField(auto_now_add=True)
+    # update_time = models.DateTimeField(auto_now=True)
+
+    manager = models.Manager()
+
+    class Meta:
+        db_table = 'class'  # 自定义表名称
+        verbose_name = '学生班级列表'  # 指定在admin管理界面中显示的名称
+        ordering = ('id',)
 
 
 # 登陆日志
@@ -60,22 +77,22 @@ class UserStudent(models.Model):
 
 class LoginLog(models.Model):
     # 登录名
-    login_name = models.CharField(max_length=30)
+    loginname = models.CharField(max_length=20)
     # 登入时间
-    login_time = models.DateTimeField(auto_now_add=True)
+    logintime = models.CharField(max_length=20)
     # 登出时间
-    logout_time = models.DateTimeField()
+    last_time = models.CharField(max_length=20)
     # 登陆ip
-    login_ip = models.CharField(max_length=30)
+    ipaddress = models.CharField(max_length=40)
     # 终端类型
-    terminal_type = models.CharField(max_length=30)
+    state = models.CharField(max_length=20)
     create_time = models.DateTimeField(auto_now_add=True)
-    update_time = models.DateTimeField(auto_now=True)
+    # update_time = models.DateTimeField(auto_now=True)
 
     manager = models.Manager()
 
     class Meta:
-        db_table = 'login_log'  # 自定义表名称
+        db_table = 'userlogin'  # 自定义表名称
         verbose_name = '登陆日志'  # 指定在admin管理界面中显示的名称
         ordering = ('create_time',)
 
@@ -93,11 +110,11 @@ class Equipment(models.Model):
     # cpu型号
     cpu_model = models.CharField(max_length=30)
     # cpu 核数
-    core_num = models.IntegerField()
+    core_num = models.CharField(max_length=30)
     # 内存
-    storage = models.IntegerField()
+    storage = models.CharField(max_length=30)
     # 磁盘空间
-    disk = models.IntegerField()
+    disk = models.CharField(max_length=30)
     # 是否安装agent
     isagent = models.IntegerField(default=0)
     # 备注
@@ -108,7 +125,7 @@ class Equipment(models.Model):
     manager = models.Manager()
 
     class Meta:
-        db_table = 'equipment'  # 自定义表名称
+        db_table = 'server_info'  # 自定义表名称
         verbose_name = '服务器列表'  # 指定在admin管理界面中显示的名称
         ordering = ('create_time',)
 
@@ -117,16 +134,16 @@ class Equipment(models.Model):
 
 
 class Cpu(models.Model):
-    equip_id = models.IntegerField()
-    usage_rate = models.FloatField()
-    check_date = models.DateField(auto_now_add=True)
+    hostID = models.IntegerField()
+    usage = models.CharField(max_length=50)
+    date = models.DateField(auto_now_add=True)
     create_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)
 
     manager = models.Manager()
 
     class Meta:
-        db_table = 'cpu'  # 自定义表名称
+        db_table = 'cpu_dynamic_info'  # 自定义表名称
         verbose_name = 'cpu动态表'  # 指定在admin管理界面中显示的名称
         ordering = ('create_time',)
 
@@ -135,16 +152,16 @@ class Cpu(models.Model):
 
 
 class Storage(models.Model):
-    equip_id = models.IntegerField()
-    usage_rate = models.FloatField()
-    check_date = models.DateField(auto_now_add=True)
+    hostID = models.IntegerField()
+    usage = models.CharField(max_length=50)
+    date = models.DateField(auto_now_add=True)
     create_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)
 
     manager = models.Manager()
 
     class Meta:
-        db_table = 'storage'  # 自定义表名称
+        db_table = 'mem_dynamic_info'  # 自定义表名称
         verbose_name = 'storage动态表'  # 指定在admin管理界面中显示的名称
         ordering = ('create_time',)
 
@@ -153,73 +170,95 @@ class Storage(models.Model):
 
 
 class Disk(models.Model):
-    equip_id = models.IntegerField()
-    usage_rate = models.FloatField()
-    check_date = models.DateField(auto_now_add=True)
+    hostID = models.IntegerField()
+    usage = models.CharField(max_length=50)
+    date = models.DateField(auto_now_add=True)
     create_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)
 
     manager = models.Manager()
 
     class Meta:
-        db_table = 'disk'  # 自定义表名称
+        db_table = 'disk_dynamic_info'  # 自定义表名称
         verbose_name = 'disk动态表'  # 指定在admin管理界面中显示的名称
+        ordering = ('create_time',)
+
+
+# 网络动态表
+
+
+class Network(models.Model):
+    hostID = models.IntegerField()
+    receive_speed = models.CharField(max_length=50)
+    transmit_speed = models.CharField(max_length=50)
+    date = models.DateField(auto_now_add=True)
+    create_time = models.DateTimeField(auto_now_add=True)
+    update_time = models.DateTimeField(auto_now=True)
+
+    manager = models.Manager()
+
+    class Meta:
+        db_table = 'network_dynamic_info'  # 自定义表名称
+        verbose_name = '网络动态表'  # 指定在admin管理界面中显示的名称
         ordering = ('create_time',)
 
 
 # 系统日志表
 
 class SysLog(models.Model):
+    # 服务器id
+    hostID = models.IntegerField()
     # 级别 0:正常 1:警告 2:危险
     level = models.IntegerField(default=0)
     # 内容
-    content = models.CharField(max_length=30)
+    content = models.CharField(max_length=50)
     # 备注
-    remarks = models.CharField(max_length=255)
+    remarks = models.CharField(max_length=50)
+    date = models.DateField(auto_now_add=True)
     create_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)
 
     manager = models.Manager()
 
     class Meta:
-        db_table = 'sys_log'  # 自定义表名称
+        db_table = 'Log'  # 自定义表名称
         verbose_name = '系统日志'  # 指定在admin管理界面中显示的名称
         ordering = ('create_time',)
 
 
-class Software(models.Model):
-    # 服务器id
-    equip_id = models.IntegerField()
-    # 软件名称
-    soft_name = models.CharField(max_length=100)
-    # 日志文件名
-    soft_log_name = models.CharField(max_length=100)
-    # 描述
-    describe = models.CharField(max_length=255)
-    create_time = models.DateTimeField(auto_now_add=True)
-    update_time = models.DateTimeField(auto_now=True)
+# class Software(models.Model):
+#     # 服务器id
+#     equip_id = models.IntegerField()
+#     # 软件名称
+#     soft_name = models.CharField(max_length=100)
+#     # 日志文件名
+#     soft_log_name = models.CharField(max_length=100)
+#     # 描述
+#     describe = models.CharField(max_length=255)
+#     create_time = models.DateTimeField(auto_now_add=True)
+#     update_time = models.DateTimeField(auto_now=True)
 
-    manager = models.Manager()
+#     manager = models.Manager()
 
-    class Meta:
-        db_table = 'software'  # 自定义表名称
-        verbose_name = '软件列表'  # 指定在admin管理界面中显示的名称
-        ordering = ('create_time',)
+#     class Meta:
+#         db_table = 'software'  # 自定义表名称
+#         verbose_name = '软件列表'  # 指定在admin管理界面中显示的名称
+#         ordering = ('create_time',)
 
 
-class SoftwareLog(models.Model):
-    # 服务器id
-    equip_id = models.IntegerField()
-    # 软件名称
-    soft_name = models.CharField(max_length=100)
-    # 日志信息
-    soft_log = models.CharField(max_length=255)
-    create_time = models.DateTimeField(auto_now_add=True)
-    update_time = models.DateTimeField(auto_now=True)
+# class SoftwareLog(models.Model):
+#     # 服务器id
+#     equip_id = models.IntegerField()
+#     # 软件名称
+#     soft_name = models.CharField(max_length=100)
+#     # 日志信息
+#     soft_log = models.CharField(max_length=255)
+#     create_time = models.DateTimeField(auto_now_add=True)
+#     update_time = models.DateTimeField(auto_now=True)
 
-    manager = models.Manager()
+#     manager = models.Manager()
 
-    class Meta:
-        db_table = 'software_log'  # 自定义表名称
-        verbose_name = '软件日志'  # 指定在admin管理界面中显示的名称
-        ordering = ('create_time',)
+#     class Meta:
+#         db_table = 'software_log'  # 自定义表名称
+#         verbose_name = '软件日志'  # 指定在admin管理界面中显示的名称
+#         ordering = ('create_time',)

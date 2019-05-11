@@ -4,6 +4,8 @@ from web import views
 urlpatterns = [
     # 登陆接口
     path('login', views.login),
+    # 登出
+    path('logout', views.logout),
     # 创建系统用户
     path('createsystemuser', views.createSystemUser),
     # 获取系统用户
@@ -45,11 +47,13 @@ urlpatterns = [
     # 获取disk数据
     path('getdisk', views.getDisk),
     # 获取软件数据
-    path('getsoftware', views.getSoftware),
+    # path('getsoftware', views.getSoftware),
     # 发送注册邮件 
     path('registeremail', views.registerEmail),
     # 激活
     path('activeaccount', views.activeAccount),
+    # 网络检测
+    path('getnetwork', views.getNetwork),
     # 测试
     path('test',views.test)
 ]

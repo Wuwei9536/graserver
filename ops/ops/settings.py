@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'ops.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ops',
+        'NAME': 'collection',
         'USER': 'root',
         'PASSWORD': 'root',
         'HOST': '',

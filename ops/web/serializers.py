@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserSystem, UserStudent, LoginLog, Software, SoftwareLog, Storage, SysLog, Equipment, Cpu, Disk
+from .models import UserSystem, UserStudent, LoginLog, Storage, SysLog, Equipment, Cpu, Disk,StudentClass,Network
 
 
 class UserSystemSerializer(serializers.ModelSerializer):
@@ -12,8 +12,14 @@ class UserSystemSerializer(serializers.ModelSerializer):
 class UserStudentSerializer(serializers.ModelSerializer):
     class Meta:  
         model = UserStudent
-        fields = ('id', 'stu_name', 'stu_password', 'stu_num',
-                  'academy', 'class_grade', 'status')
+        fields = ('id', 'name', 'number',
+                  'spell', 'classID')
+
+class StudentClassSerializer(serializers.ModelSerializer):
+    class Meta:  
+        model = StudentClass
+        fields = ('id', 'classname', 'academy',
+                  'classspell')
 
 
 class EquipmentSerializer(serializers.ModelSerializer):
@@ -26,38 +32,43 @@ class EquipmentSerializer(serializers.ModelSerializer):
 class CpuSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cpu
-        fields = ('id', 'equip_id', 'usage_rate', 'check_date','create_time')
+        fields = ('id', 'hostID', 'usage', 'date','create_time')
 
 
 class DiskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Disk
-        fields = ('id', 'equip_id', 'usage_rate', 'check_date','create_time')
+        fields = ('id', 'hostID', 'usage', 'date','create_time')
 
 
 class StorageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Storage
-        fields = ('id', 'equip_id', 'usage_rate', 'check_date','create_time')
+        fields = ('id', 'hostID', 'usage', 'date','create_time')
 
-
-class SoftwareSerializer(serializers.ModelSerializer):
+class NetworkSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Software
-        fields = ('id', 'equip_id', 'soft_name', 'soft_log_name', 'describe')
+        model = Network
+        fields = ('id', 'hostID','receive_speed', 'transmit_speed', 'date','create_time')
 
 
-class SoftwareLogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SoftwareLog
-        fields = ('id', 'equip_id', 'soft_name', 'soft_log')
+# class SoftwareSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Software
+#         fields = ('id', 'equip_id', 'soft_name', 'soft_log_name', 'describe')
+
+
+# class SoftwareLogSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = SoftwareLog
+#         fields = ('id', 'equip_id', 'soft_name', 'soft_log')
 
 
 class LoginLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoginLog
-        fields = ('id', 'login_name', 'login_time',
-                  'logout_time', 'login_ip', 'terminal_type')
+        fields = ('id', 'loginname', 'logintime',
+                  'last_time', 'ipaddress', 'state')
 
 
 class SysLogSerializer(serializers.ModelSerializer):
