@@ -78,15 +78,15 @@ class StudentClass(models.Model):
 class LoginLog(models.Model):
     # 登录名
     loginname = models.CharField(max_length=20)
-    # 登入时间
-    logintime = models.CharField(max_length=20)
     # 登出时间
     last_time = models.CharField(max_length=20)
     # 登陆ip
     ipaddress = models.CharField(max_length=40)
     # 终端类型
     state = models.CharField(max_length=20)
-    create_time = models.DateTimeField(auto_now_add=True)
+    # 
+    port = models.CharField(max_length=20)
+    createtime = models.DateTimeField(auto_now_add=True)
     # update_time = models.DateTimeField(auto_now=True)
 
     manager = models.Manager()
@@ -94,7 +94,7 @@ class LoginLog(models.Model):
     class Meta:
         db_table = 'userlogin'  # 自定义表名称
         verbose_name = '登陆日志'  # 指定在admin管理界面中显示的名称
-        ordering = ('create_time',)
+        ordering = ('createtime',)
 
 
 # 服务器列表

@@ -596,6 +596,14 @@ def activeAccount(request):
     return JsonResponse({'status': 'ok'}, safe=False)
 
 
+#登陆日志
+@csrf_exempt
+def loginLog(request):
+    loginLog = LoginLog.manager.all()
+    loginLogSerializer = LoginLogSerializer(loginLog,many=True)
+    return JsonResponse(loginLogSerializer.data,safe=False)
+
+
 
 
 # 测试

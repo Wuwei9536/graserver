@@ -48,12 +48,14 @@ urlpatterns = [
     path('getdisk', views.getDisk),
     # 获取软件数据
     # path('getsoftware', views.getSoftware),
-    # 发送注册邮件 
+    # 发送注册邮件
     path('registeremail', views.registerEmail),
     # 激活
     path('activeaccount', views.activeAccount),
     # 网络检测
     path('getnetwork', views.getNetwork),
+    # 登陆日志
+    path('loginlog', views.loginLog),
     # 测试
-    path('test',views.test)
+    path('test', views.test)
 ]

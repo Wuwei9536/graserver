@@ -67,7 +67,7 @@ class NetworkSerializer(serializers.ModelSerializer):
 class LoginLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoginLog
-        fields = ('id', 'loginname', 'logintime',
+        fields = ('id', 'loginname','port','createtime',
                   'last_time', 'ipaddress', 'state')
 
 
