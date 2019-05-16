@@ -78,8 +78,6 @@ class StudentClass(models.Model):
 class LoginLog(models.Model):
     # 登录名
     loginname = models.CharField(max_length=20)
-    # 登出时间
-    last_time = models.CharField(max_length=20)
     # 登陆ip
     ipaddress = models.CharField(max_length=40)
     # 终端类型
