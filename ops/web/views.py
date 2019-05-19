@@ -20,7 +20,10 @@ import xlrd
 @csrf_exempt
 def login(request):
     params = request.GET  # 获取Get参数
-    remoteIp = request.META.get('REMOTE_ADDR')  # 客户端ip
+    if 'HTTP_X_FORWARDED_FOR' in request.META:
+        remoteIp = request.META['HTTP_X_FORWARDED_FOR']
+    else:
+        remoteIp = request.META['REMOTE_ADDR']
     systemUser = UserSystem.manager.filter(
         email=params['email'], password=params['password']).exclude(status=-1)  # QuerySet对象
     systemUserSerializer = UserSystemSerializer(
@@ -28,7 +31,7 @@ def login(request):
     if len(systemUser) > 0:  # 计算数组长度需要用QuerySet对象
         # 增加登陆日志
         SysLoginLog.manager.create(
-            loginEmail=params['email'], password=params['password'], ip=remoteIp,state='成功')
+            loginEmail=params['email'], password=params['password'], ip=remoteIp, state='成功')
 
         systemUser.update(status=1)  # 在线
 
@@ -40,7 +43,7 @@ def login(request):
     else:
          # 增加登陆日志
         SysLoginLog.manager.create(
-            loginEmail=params['email'], password=params['password'], ip=remoteIp,state='失败')
+            loginEmail=params['email'], password=params['password'], ip=remoteIp, state='失败')
         return JsonResponse({'status': 'error', 'data': '您还未注册', 'currentAuthority': 'guest', 'type': params['type']})
 
 # 登出
