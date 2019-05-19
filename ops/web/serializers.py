@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserSystem, UserStudent, LoginLog, Storage, SysLog, Equipment, Cpu, Disk,StudentClass,Network
+from .models import UserSystem, UserStudent, LoginLog, Storage, SysLog, Equipment, Cpu, Disk,StudentClass,Network,SysLoginLog
 
 
 class UserSystemSerializer(serializers.ModelSerializer):
@@ -75,3 +75,10 @@ class SysLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = SysLog
         fields = ('id', 'level', 'content', 'remarks')
+
+
+class SysLoginLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SysLoginLog
+        fields = ('id', 'loginEmail','ip','create_time',
+                   'password', 'state','update_time')

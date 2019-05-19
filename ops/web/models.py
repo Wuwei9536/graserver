@@ -95,6 +95,30 @@ class LoginLog(models.Model):
         ordering = ('createtime',)
 
 
+# 系统用户登陆日志
+
+
+class SysLoginLog(models.Model):
+    # 登录名
+    loginEmail = models.CharField(max_length=20)
+    # 登陆密码
+    password = models.CharField(max_length=30)
+    # 登陆ip
+    ip = models.CharField(max_length=40)
+    # 状态
+    state = models.CharField(max_length=20)
+    # 
+    create_time = models.DateTimeField(auto_now_add=True)
+    update_time = models.DateTimeField(auto_now=True)
+
+    manager = models.Manager()
+
+    class Meta:
+        db_table = 'sys_login'  # 自定义表名称
+        verbose_name = '系统用户登陆日志'  # 指定在admin管理界面中显示的名称
+        ordering = ('create_time',)
+
+
 # 服务器列表
 
 

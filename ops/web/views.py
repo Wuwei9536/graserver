@@ -3,8 +3,8 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
-from web.models import UserSystem, Equipment, Cpu, UserStudent, Storage, Disk, LoginLog, StudentClass,Network
-from web.serializers import UserSystemSerializer, EquipmentSerializer, CpuSerializer, UserStudentSerializer, DiskSerializer, StorageSerializer, LoginLogSerializer, StudentClassSerializer,NetworkSerializer
+from web.models import UserSystem, Equipment, Cpu, UserStudent, Storage, Disk, LoginLog, StudentClass, Network, SysLoginLog
+from web.serializers import UserSystemSerializer, EquipmentSerializer, CpuSerializer, UserStudentSerializer, DiskSerializer, StorageSerializer, LoginLogSerializer, StudentClassSerializer, NetworkSerializer, SysLoginLogSerializer
 from io import BytesIO
 from datetime import datetime
 from django.db import transaction
@@ -20,11 +20,15 @@ import xlrd
 @csrf_exempt
 def login(request):
     params = request.GET  # 获取Get参数
+    remoteIp = request.META.get('REMOTE_ADDR')  # 客户端ip
     systemUser = UserSystem.manager.filter(
         email=params['email'], password=params['password']).exclude(status=-1)  # QuerySet对象
     systemUserSerializer = UserSystemSerializer(
         systemUser, many=True)  # 序列化后的QuerySet对象    数据在 QuerySet.data 里
     if len(systemUser) > 0:  # 计算数组长度需要用QuerySet对象
+        # 增加登陆日志
+        SysLoginLog.manager.create(
+            loginEmail=params['email'], password=params['password'], ip=remoteIp,state='成功')
 
         systemUser.update(status=1)  # 在线
 
@@ -34,6 +38,9 @@ def login(request):
         response.set_cookie('user_id', userId)  # 设置cookie
         return response
     else:
+         # 增加登陆日志
+        SysLoginLog.manager.create(
+            loginEmail=params['email'], password=params['password'], ip=remoteIp,state='失败')
         return JsonResponse({'status': 'error', 'data': '您还未注册', 'currentAuthority': 'guest', 'type': params['type']})
 
 # 登出
@@ -271,27 +278,27 @@ def updateStudentUser(request):
     class_grade = params['class_grade']
     stu_num = params['stu_num']
     spell = params['spell']
-    classSpell=params['classSpell']
+    classSpell = params['classSpell']
 
     res = UserStudent.manager.filter(id=params['id'])
     # 序列化必须在res.delete之前，否则res就不存在了。
     resData = UserStudentSerializer(res, many=True)
 
-    studentClass = StudentClass.manager.filter( #检索有无此班级学院
+    studentClass = StudentClass.manager.filter(  # 检索有无此班级学院
         id=resData.data[0]['classID'])
     if len(studentClass) > 0:  # 有就取用id
         studentClassSerializer = StudentClassSerializer(
             studentClass, many=True)
         classId = studentClassSerializer.data[0]['id']
-    else: # 没有就新建后取用id
-        StudentClass.manager.create(classname=class_grade, academy=academy,classspell=classSpell)
+    else:  # 没有就新建后取用id
+        StudentClass.manager.create(
+            classname=class_grade, academy=academy, classspell=classSpell)
         createClass = StudentClass.manager.filter(classname=class_grade)
         createClassSerializer = StudentClassSerializer(createClass, many=True)
         classId = createClassSerializer.data[0]['id']
 
-
     # **就是js里的...
-    res.update(name=stu_name, number=stu_num, classID=classId,spell=spell)
+    res.update(name=stu_name, number=stu_num, classID=classId, spell=spell)
     return JsonResponse(resData.data, safe=False)
 
 
@@ -305,19 +312,21 @@ def createStudentUser(request):
     class_grade = params['class_grade']
     stu_num = params['stu_num']
     spell = params['spell']
-    classSpell=params['classSpell']
+    classSpell = params['classSpell']
 
-    classinfo = StudentClass.manager.filter(classname=class_grade) #有无此班级
+    classinfo = StudentClass.manager.filter(classname=class_grade)  # 有无此班级
     classinfoSerializer = StudentClassSerializer(classinfo, many=True)
-    if len(classinfo) > 0: #有就取用id
+    if len(classinfo) > 0:  # 有就取用id
         classId = classinfoSerializer.data[0]['id']
-    else: #没有新建后取用id
-        StudentClass.manager.create(classname=class_grade, academy=academy,classspell=classSpell)
+    else:  # 没有新建后取用id
+        StudentClass.manager.create(
+            classname=class_grade, academy=academy, classspell=classSpell)
         createClass = StudentClass.manager.filter(classname=class_grade)
         createClassSerializer = StudentClassSerializer(createClass, many=True)
         classId = createClassSerializer.data[0]['id']
-    #新建用户    
-    UserStudent.manager.create(name=stu_name, number=stu_num, classID=classId,spell=spell)
+    # 新建用户
+    UserStudent.manager.create(
+        name=stu_name, number=stu_num, classID=classId, spell=spell)
     studentUser = UserStudent.manager.filter(name=params['stu_name'])
     studentUserSerializer = UserStudentSerializer(studentUser, many=True)
     return JsonResponse(studentUserSerializer.data, safe=False)
@@ -343,7 +352,6 @@ def downloadExcelStu(request):
     sheet.write(0, 3, '班级')
     sheet.write(0, 4, '姓名拼音')
     sheet.write(0, 5, '班级拼音')
-    
 
     if(params['needData'] != 'false'):
         # 写入数据
@@ -388,12 +396,15 @@ def uploadExcelStu(request):
                     with transaction.atomic():  # 控制数据库事务交易
                         for i in range(1, rows):
                             rowVlaues = table.row_values(i)
-                            classinfo = StudentClass.manager.filter(classname=rowVlaues[3])
+                            classinfo = StudentClass.manager.filter(
+                                classname=rowVlaues[3])
                             if len(classinfo) > 0:
                                 classId = classinfo[0].id
                             else:
-                                StudentClass.manager.create(classname=rowVlaues[3],academy=rowVlaues[2],classspell=rowVlaues[5])
-                                newClassinfo = StudentClass.manager.filter(classname=rowVlaues[3])
+                                StudentClass.manager.create(
+                                    classname=rowVlaues[3], academy=rowVlaues[2], classspell=rowVlaues[5])
+                                newClassinfo = StudentClass.manager.filter(
+                                    classname=rowVlaues[3])
                                 classId = newClassinfo[0].id
                             UserStudent.manager.create(
                                 name=rowVlaues[0], number=rowVlaues[1], spell=rowVlaues[4], classID=classId)
@@ -539,13 +550,14 @@ def getDisk(request):
 
 # 获取网络检测数据
 
+
 def getNetwork(request):
     params = request.GET
     hostID = params['id']
     date = time.strftime('%Y-%m-%d', time.localtime(time.time()))  # 当前日期
     network = Network.manager.filter(hostID=hostID, date=date)
     networkSerializer = NetworkSerializer(network, many=True)
-    return JsonResponse(networkSerializer.data, safe=False)# # 获软件数据
+    return JsonResponse(networkSerializer.data, safe=False)  # 获软件数据
 
 # def getSoftware(request):
 #     params = request.GET
@@ -596,15 +608,19 @@ def activeAccount(request):
     return JsonResponse({'status': 'ok'}, safe=False)
 
 
-#登陆日志
+# 登陆日志
 @csrf_exempt
 def loginLog(request):
-    loginLog = LoginLog.manager.all()
-    loginLogSerializer = LoginLogSerializer(loginLog,many=True)
-    return JsonResponse(loginLogSerializer.data,safe=False)
+    loginLog = LoginLog.manager.all().reverse()
+    loginLogSerializer = LoginLogSerializer(loginLog, many=True)
+    return JsonResponse(loginLogSerializer.data, safe=False)
 
-
-
+# 系统用户登陆日志
+@csrf_exempt
+def sysLoginLog(request):
+    sysLoginLog = SysLoginLog.manager.all().reverse()
+    sysLoginLogSerializer = SysLoginLogSerializer(sysLoginLog, many=True)
+    return JsonResponse(sysLoginLogSerializer.data, safe=False)
 
 # 测试
 @csrf_exempt

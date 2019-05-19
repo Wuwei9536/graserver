@@ -56,6 +56,8 @@ urlpatterns = [
     path('getnetwork', views.getNetwork),
     # 登陆日志
     path('loginlog', views.loginLog),
+    # 系统登陆用户日志
+    path('sysloginlog', views.sysLoginLog),
     # 测试
     path('test', views.test)
 ]
