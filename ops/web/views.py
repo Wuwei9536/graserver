@@ -3,8 +3,8 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
-from web.models import UserSystem, Equipment, Cpu, UserStudent, Storage, Disk, LoginLog, StudentClass, Network, SysLoginLog
-from web.serializers import UserSystemSerializer, EquipmentSerializer, CpuSerializer, UserStudentSerializer, DiskSerializer, StorageSerializer, LoginLogSerializer, StudentClassSerializer, NetworkSerializer, SysLoginLogSerializer
+from web.models import UserSystem, Equipment, Cpu, UserStudent, Storage, Disk, LoginLog, StudentClass, Network, SysLoginLog, Linux
+from web.serializers import UserSystemSerializer, EquipmentSerializer, CpuSerializer, UserStudentSerializer, DiskSerializer, StorageSerializer, LoginLogSerializer, StudentClassSerializer, NetworkSerializer, SysLoginLogSerializer, LinuxSerializer
 from io import BytesIO
 from datetime import datetime
 from django.db import transaction
@@ -625,6 +625,24 @@ def sysLoginLog(request):
     sysLoginLogSerializer = SysLoginLogSerializer(sysLoginLog, many=True)
     return JsonResponse(sysLoginLogSerializer.data, safe=False)
 
+
+# Linux用户
+@csrf_exempt
+def linux(request):
+    linux = Linux.manager.all()
+    linuxSerializer = LinuxSerializer(linux, many=True)
+    for item in linuxSerializer.data:
+        if item['state'] == 1:
+            item['state'] = '正常'
+        elif item['state'] == 2:
+            item['state'] = '用户配额已满'
+        elif item['state'] == 3:
+            item['state'] = '待删除'
+        else :
+            item['state'] = '已删除'
+
+    return JsonResponse(linuxSerializer.data, safe=False)
+
 # 测试
 @csrf_exempt
 def test(request):
@@ -634,8 +652,9 @@ def test(request):
     print()
     print()
     print()
-    print('request.META', request.META)
+    # print('request.META', request.META)
     print("ip:", request.META.get('REMOTE_ADDR'))
+    print("ip:", request.META.get('HTTP_HOST'))
     return HttpResponse('ok')
     # for item in equipmentsSerializer.data:
     #     cpu = Cpu.manager.filter(equip_id=item['id'])

@@ -248,6 +248,27 @@ class SysLog(models.Model):
         ordering = ('create_time',)
 
 
+class Linux(models.Model):
+    logname = models.CharField(max_length=20)
+    password = models.CharField(max_length=30)
+    groupa = models.CharField(max_length=20) 
+    directory = models.CharField(max_length=40)
+    # 状态
+    state = models.IntegerField()
+    # 
+    createtime = models.DateTimeField(auto_now_add=True)
+    updatetime = models.DateTimeField(auto_now=True)
+    
+    userspace = models.CharField(max_length=255)
+    used = models.CharField(max_length=255)
+    manager = models.Manager()
+
+    class Meta:
+        db_table = 'account'  # 自定义表名称
+        verbose_name = 'Linux用户'  # 指定在admin管理界面中显示的名称
+        ordering = ('createtime',)
+
+
 # class Software(models.Model):
 #     # 服务器id
 #     equip_id = models.IntegerField()

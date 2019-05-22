@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'ops.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dev',
+        'NAME': 'collection',
         'USER': 'root',
         'PASSWORD': 'Ww5201314,,,,,,',
         'HOST': '',
@@ -136,7 +136,7 @@ STATIC_URL = '/static/'
 
 #这一项是固定的
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# smtp服务的邮箱服务器 我用的是163
+# smtp服务的邮箱服务器 
 EMAIL_HOST = 'smtp.qq.com'
 # smtp服务固定的端口是25 =>云服务器默认关闭25端口
 EMAIL_PORT = 25
